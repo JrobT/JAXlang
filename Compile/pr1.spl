@@ -1,11 +1,11 @@
 start
-	var set_output; ** output set **
-	var str_output; ** add this to output **
+	var $set;
+	var @str;
 
-	for str_i : $input0 do
-		str_new = "a"&str_i;
-		set_output = set_output place str_output;
-	stop
+	for @inp : $in0 do
+		@str = "a"&@inp;
+		$set = $set place @str;
+	loop
 
-	print $output;
+	print $set;
 fi

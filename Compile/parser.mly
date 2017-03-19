@@ -19,7 +19,7 @@ open Functions;;
 %token FOR COLON DO STOP
 %token PRINT
 %token VAR
-%token SEMICOLON LPAREN RPAREN
+%token EOL LPAREN RPAREN
 %token EQUAL
 %token PLUS MINUS TIMES DIVIDE MOD
 %token CONS
@@ -68,7 +68,7 @@ body:
 statement:
  | for_do_done               		{ ForStatement $1 }
  | if_then_else_fi                 	{ IfStatement $1 }   
- | action SEMICOLON		   		    { ActionStatement $1 }
+ | action EOL		   		    { ActionStatement $1 }
 ;
 
 for_do_done:

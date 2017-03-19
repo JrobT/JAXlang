@@ -22,7 +22,7 @@ rule lexer_main = parse
     | "fi"                                      { FINISH }
     | '('                                       { LPAREN }
     | ')'                                       { RPAREN }
-    | ';'                                       { SEMICOLON }
+    | ';'                                       { EOL }
     | '+'                                       { PLUS }
     | '-'                                       { MINUS }
     | '*'                                       { TIMES }
@@ -43,17 +43,17 @@ rule lexer_main = parse
     | "else"                                    { ELSE }
     | "end"                                     { END }
     | "for"                                     { FOR }
-    | ":"                                       { COLON } (*for each ; IN*)
+    | ':'                                       { COLON } (*for each ; IN*)
     | "do"                                      { DO }
-    | "stop"                                    { STOP }
+    | "loop"                                    { STOP }
     | "print"                                   { PRINT }
     | "var"                                     { VAR }
-    | "^"                                       { STRING ""} (*empty string*)
-    | "int_"possibleSymbols+ as int_var_id         { IVAR( int_var_id ) }
-    | "str_"possibleSymbols+ as str_var_id         { SVAR( str_var_id ) }
-    | "bool_"possibleSymbols+ as bl_var_id          { BVAR( bl_var_id ) }
-    | "set_"possibleSymbols+  as set               { LVAR set }
-    | "<< input"['0'-'9']+ as input               { INPUT input  }
+    | "_empty"                                  { STRING ""} (*empty string*)
+    | '#'possibleSymbols+ as int_var_id         { IVAR( int_var_id ) }
+    | '@'possibleSymbols+ as str_var_id         { SVAR( str_var_id ) }
+    | '?'possibleSymbols+ as bl_var_id          { BVAR( bl_var_id ) }
+    | '$'possibleSymbols+  as set               { LVAR set }
+    | "$in"['0'-'9']+ as input                  { INPUT input  }
     | "_output_count" as output_stuff           { COUNT output_stuff }
     | "place"                                   { PLACE }
     | "del"                                     { DELETE }

@@ -11,7 +11,6 @@ let setBinding = ref VariableBinding.empty;;
 
 let outputCount = ref 0;;
 
-(* ============================ helper code ===============================*)
 let get_words input = 
   let remove_stuff = Str.global_replace (Str.regexp "[ '{' | '}' | ' ']") "" in
     Str.split_delim (Str.regexp ",") (remove_stuff input);;
@@ -34,21 +33,21 @@ let lookupStrVar e = match e with
   | Str s -> s
   | Str_Idf sv -> try
         VariableBinding.find sv !stringBinding
-      with Not_found -> failwith ("Variable "^sv^" Not Declared as a string type. Hint: Maybe try - let "^sv^" = _empty_string;")
+      with Not_found -> failwith (sv^" Not Declared as a string.")
 ;;
 
 let lookupIntVar e = match e with
   | Int i -> i 
   | Int_Idf iv -> try
         VariableBinding.find iv !intBinding
-      with Not_found -> failwith ("Variable "^iv^" Not Declared as an int type. Hint: Maybe try - let "^iv^" = 0;")
+      with Not_found -> failwith (iv^" Not Declared as an int type.")
 ;;
 
 let looupBlVar e = match e with
   | Bool b -> b
   | Bool_Idf bv -> try
         VariableBinding.find bv !boolBinding
-      with Not_found -> failwith ("Variable "^bv^" Not Declared as a boolean type. Hint: Maybe try - let "^bv^" = false;")
+      with Not_found -> failwith (bv^" Not Declared as a boolean type.")
 ;;
 
 let lookupSet name =
@@ -62,22 +61,20 @@ let rec convert_empty_input = function
 ;;
 
 let processInput input_line stream_number= 
-  setBinding := VariableBinding.add ("$input"^(string_of_int !stream_number)) (convert_empty_input (get_uniq_words input_line)) !setBinding
+  setBinding := VariableBinding.add ("$in"^(string_of_int !stream_number)) (convert_empty_input (get_uniq_words input_line)) !setBinding
 ;;
-
-(* ============================ helper code ===============================*)
 
 let processSetAction e  = match e with
   | Set s -> lookupSet s
   | SetAdd (name, sv) -> (let string_value = lookupStrVar sv in
                           try
                               let set = lookupSet name in string_value :: set;
-                          with Not_found -> failwith ("Set "^name^" Not Found. Hint: Maybe try - let "^name^";"))
+                          with Not_found -> failwith (name^" Not Found."))
   | SetRem (name, sv) -> (let string_value = lookupStrVar sv in
                           try
                               let set = lookupSet name in
                                 List.filter (fun x-> if (compare string_value x)==0 then false else true) set
-                          with Not_found -> failwith ("Set "^name^" Not Found. Hint: Maybe try - let "^name^";"))
+                          with Not_found -> failwith (name^" Not Found."))
 ;;
 
 let exists name =
@@ -134,7 +131,6 @@ let rec processDecAction e = match e with
   | BVarDec (s, ba) -> boolBinding := VariableBinding.add s (processBoolAction ba) !boolBinding
 ;;
 
-(* ============================ helper code ===============================*)
 let rec empty_to_colon = function
   | [] -> []
   | (h::t) when h = "" -> ":"::(empty_to_colon t) 
@@ -157,14 +153,14 @@ let formatSet o =
   | [] -> ""
   | [x] -> x
   | head::body -> head^", "^(formatSetAux body)
-                  in "{"^(formatSetAux truncate)^"}";;
-(* ============================ helper code ===============================*)
+                  in "{"^(formatSetAux truncate)^"}"
+;;
 
 let rec processPrint e = match e with
   | Print (SetAction s) -> (try 
                               let set = (processSetAction s) in 
                                 print_newline (print_string (formatSet (empty_to_colon (sort_string_list set))))
-                            with Not_found -> failwith ("Set Not Found. Hint: Maybe didn't declare it?"))
+                            with Not_found -> failwith ("Set Not Found."))
   | Print (IntCmd i) -> print_newline (print_int (processIntAction i))
   | Print (BoolCmd b) -> (let result = (processBoolAction b) in
                                   if (result == true) then print_newline (print_string "true") 
@@ -217,7 +213,7 @@ and processIf e = match e with
 and processFor e = match e with
   | ForEach (v, setName, bod) -> (try
                                 exists v;
-                                failwith ("Variable "^v^" used already! Hint: Try a variable that is not already declared by a let declaration.")
+                                failwith (v^" used already!")
                               with Not_found -> (try
                                                    (let set = lookupSet setName in
                                                     let count = List.length set in
@@ -227,7 +223,7 @@ and processFor e = match e with
                                                         processBody bod;
                                                       done;
                                                       stringBinding := VariableBinding.remove v !stringBinding)
-                                                 with Not_found -> failwith ("Input set "^setName^" Not Found. Hint: $input0 refers to the 1st language in input file and so on.")))
+                                                 with Not_found -> failwith (setName^" Not Found.")))
   | ForBool (bl, bod) -> while (processBoolAction bl) do (processBody bod) done
 ;;
 

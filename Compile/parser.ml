@@ -23,7 +23,7 @@ type token =
   | STOP
   | PRINT
   | VAR
-  | SEMICOLON
+  | EOL
   | LPAREN
   | RPAREN
   | EQUAL
@@ -62,7 +62,7 @@ let yytransl_const = [|
   278 (* STOP *);
   279 (* PRINT *);
   280 (* VAR *);
-  281 (* SEMICOLON *);
+  281 (* EOL *);
   282 (* LPAREN *);
   283 (* RPAREN *);
   284 (* EQUAL *);
@@ -274,7 +274,7 @@ let yynames_const = "\
   STOP\000\
   PRINT\000\
   VAR\000\
-  SEMICOLON\000\
+  EOL\000\
   LPAREN\000\
   RPAREN\000\
   EQUAL\000\
@@ -347,7 +347,7 @@ let yyact = [|
     let _1 = (Parsing.peek_val __caml_parser_env 1 : Functions.action) in
     Obj.repr(
 # 71 "parser.mly"
-                              ( ActionStatement _1 )
+                        ( ActionStatement _1 )
 # 352 "parser.ml"
                : Functions.statement))
 ; (fun __caml_parser_env ->

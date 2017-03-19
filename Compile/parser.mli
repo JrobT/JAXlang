@@ -23,7 +23,7 @@ type token =
   | STOP
   | PRINT
   | VAR
-  | SEMICOLON
+  | EOL
   | LPAREN
   | RPAREN
   | EQUAL
