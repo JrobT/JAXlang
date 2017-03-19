@@ -42,17 +42,17 @@ open Functions;;
 %type <Functions.ifElse> if_then_else_fi
 %type <Functions.action> action
 %type <Functions.operation> operation
-%type <Functions.intAction> int_action
-%type <Functions.int_var> intOrIVar
-%type <Functions.strAction> str_action
-%type <Functions.str_var> strOrSVar
-%type <Functions.boolAction> bool_action
-%type <Functions.bool_var> boolOrBVar
+%type <Functions.str_cmd> str_cmd
+%type <Functions.def_string> str_variable
+%type <Functions.int_cmd> int_cmd
+%type <Functions.def_int> int_variable
+%type <Functions.bool_cmd> bool_cmd
+%type <Functions.def_bool> bool_variable
 %type <Functions.setAction> set_action
 %type <string> set
 %type <Functions.decAction> dec_action
 %type <Functions.mutAction> mut_action
-%type <Functions.print> print_action
+%type <Functions.print> print_cmd
 
 %%
 
@@ -73,77 +73,75 @@ statement:
 
 for_do_done:
  | FOR SVAR COLON set DO body STOP 	{ ForEach ($2, $4, $6) }
- | FOR bool_action DO body STOP 	{ ForBool ($2, $4) }
+ | FOR bool_cmd DO body STOP 	    { ForBool ($2, $4) }
 ;
 
 if_then_else_fi:
- | IF bool_action THEN body END    	     { If ($2, $4) }                           
- | IF bool_action THEN body ELSE body END { IfElse ($2, $4, $6) } 	   
+ | IF bool_cmd THEN body END    	        { If ($2, $4) }                           
+ | IF bool_cmd THEN body ELSE body END      { IfElse ($2, $4, $6) } 	   
 ;
 
 action:
  | operation 						{ Operation $1 }
  | dec_action 						{ DecAction $1 }
  | mut_action 						{ MutAction $1 }
- | print_action 					{ PrintAction $1 }
+ | print_cmd 					    { PrintAction $1 }
 ;
 
 operation:
  | set_action						{ SetAction $1 }
- | int_action						{ IntAction $1 }
- | str_action 						{ StrAction $1 }
- | bool_action 						{ BoolAction $1 }
+ | int_cmd					    	{ IntCmd $1 }
+ | str_cmd 						    { StrCmd $1 }
+ | bool_cmd 						{ BoolCmd $1 }
 ;
 
-int_action:
- | LPAREN int_action RPAREN 		{ $2 }
- | intOrIVar 					    { IntOrVar $1 }
- | int_action PLUS int_action 	    { Plus ($1, $3) }
- | int_action MINUS int_action 	    { Minus ($1, $3) }
- | int_action TIMES int_action       { Times ($1, $3) }
- | int_action DIVIDE int_action      { Divide ($1, $3) }
- | int_action MOD int_action  	    { Mod ($1, $3) }
- | MINUS int_action %prec UMINUS    { Uminus $2 }
-;
+int_cmd:
+ | LPAREN int_cmd RPAREN 		{ $2 }
+ | int_variable 					    { IntOrVar $1 }
+ | int_cmd PLUS int_cmd 	    { Plus ($1, $3) }
+ | int_cmd MINUS int_cmd 	    { Minus ($1, $3) }
+ | int_cmd TIMES int_cmd       { Times ($1, $3) }
+ | int_cmd DIVIDE int_cmd      { Divide ($1, $3) }
+ | int_cmd MOD int_cmd  	    { Mod ($1, $3) }
+ ;
 
-intOrIVar:
+int_variable:
  | INT 								{ Int $1 }
- | IVAR 							{ IntVar $1 }
+ | IVAR 							{ Int_Idf $1 }
 ;
 
-str_action:
- | strOrSVar 					    { StrOrVar $1 }	
- | str_action CONS strOrSVar 		{ Cat ($1, $3) }
+str_cmd:
+ | str_variable 					    { StrOrVar $1 }	
+ | str_cmd CONS str_variable 		{ Cat ($1, $3) }
 ;
 
-strOrSVar:
+str_variable:
  | STRING 							{ Str $1 }
- | SVAR 							{ StrVar $1 }
+ | SVAR 							{ Str_Idf $1 }
 ;
 
-bool_action:
- | LPAREN bool_action RPAREN 		{ $2 }
- | boolOrBVar 						{ BoolOrVar $1 }
- | int_action LESS int_action 		{ Les ($1, $3) }
- | int_action GREATER int_action			{ Grt ($1, $3) }
- | int_action ISEQUAL int_action			{ IntEq ($1, $3) }
- | str_action ISEQUAL str_action 		{ StrEq ($1, $3) }
- | bool_action ISEQUAL bool_action 		{ BlEq ($1, $3) }
- | bool_action AND bool_action 		{ And ($1, $3) }
- | bool_action OR bool_action 		{ Or ($1, $3) }
- | NOT bool_action 					{ Not $2 }
+bool_cmd:
+ | LPAREN bool_cmd RPAREN 		{ $2 }
+ | bool_variable 						{ BoolOrVar $1 }
+ | int_cmd LESS int_cmd 		{ Les ($1, $3) }
+ | int_cmd GREATER int_cmd			{ Grt ($1, $3) }
+ | int_cmd ISEQUAL int_cmd			{ IntEq ($1, $3) }
+ | str_cmd ISEQUAL str_cmd 		{ StrEq ($1, $3) }
+ | bool_cmd ISEQUAL bool_cmd 		{ BlEq ($1, $3) }
+ | bool_cmd AND bool_cmd 		{ And ($1, $3) }
+ | bool_cmd OR bool_cmd 		{ Or ($1, $3) }
 ;
 
-boolOrBVar:
+bool_variable:
  | TRUE								{ Bool $1 }
  | FALSE							{ Bool $1 }
- | BVAR 							{ BoolVar $1 }
+ | BVAR 							{ Bool_Idf $1 }
 ;
 
 set_action:
  | set 								{ Set $1 }
- | set PLACE strOrSVar				{ SetAdd ($1, $3) }
- | set DELETE strOrSVar				{ SetRem ($1, $3) }
+ | set PLACE str_variable				{ SetAdd ($1, $3) }
+ | set DELETE str_variable				{ SetRem ($1, $3) }
  ;
 
 set:
@@ -154,20 +152,20 @@ set:
 dec_action:
  | VAR LVAR 						{ LVarDec $2 }
  | VAR IVAR 						{ IVarDec ($2, IntOrVar (Int 0)) }
- | VAR IVAR EQUAL int_action 		{ IVarDec ($2, $4) }
+ | VAR IVAR EQUAL int_cmd 		{ IVarDec ($2, $4) }
  | VAR SVAR  						{ SVarDec ($2, StrOrVar (Str "")) }
- | VAR SVAR EQUAL str_action 		{ SVarDec ($2, $4) }
+ | VAR SVAR EQUAL str_cmd 		{ SVarDec ($2, $4) }
  | VAR BVAR 						{ BVarDec ($2, BoolOrVar (Bool false)) }
- | VAR BVAR EQUAL bool_action 		{ BVarDec ($2, $4) }
+ | VAR BVAR EQUAL bool_cmd 		{ BVarDec ($2, $4) }
 ;
 
 mut_action:
  | LVAR EQUAL set_action			{ SetMut ($1, $3) }
- | IVAR EQUAL int_action			{ IntMut ($1, $3) }
- | SVAR EQUAL str_action 			{ StrMut ($1, $3) }
- | BVAR EQUAL bool_action 			{ BlMut ($1, $3) }
+ | IVAR EQUAL int_cmd			{ IntMut ($1, $3) }
+ | SVAR EQUAL str_cmd 			    { StrMut ($1, $3) }
+ | BVAR EQUAL bool_cmd 			{ BlMut ($1, $3) }
 ;
 
-print_action:
+print_cmd:
  | PRINT operation 					{ Print $2 }
 ;

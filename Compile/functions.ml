@@ -1,68 +1,64 @@
-type int_var = 
-| Int of int
-| IntVar of string
-;;
 
-type str_var = 
+type def_string = 
 | Str of string
-| StrVar of string
+| Str_Idf of string
 ;;
 
-type bool_var = 
+type str_cmd =
+| StrOrVar of def_string
+| Cat of str_cmd * def_string
+;;
+
+type def_int = 
+| Int of int
+| Int_Idf of string
+;;
+
+type int_cmd =
+| IntOrVar of def_int
+| Plus of int_cmd * int_cmd
+| Minus of int_cmd * int_cmd
+| Times of int_cmd * int_cmd
+| Divide of int_cmd * int_cmd
+| Mod of int_cmd * int_cmd
+;;
+
+type def_bool = 
 | Bool of bool
-| BoolVar of string
+| Bool_Idf of string
 ;;
 
-type intAction =
-| IntOrVar of int_var
-| Plus of intAction * intAction
-| Minus of intAction * intAction
-| Times of intAction * intAction
-| Divide of intAction * intAction
-| Mod of intAction * intAction
-| Uminus of intAction
-;;
-
-type strAction =
-| StrOrVar of str_var
-| Cat of strAction * str_var
+type bool_cmd =
+| BoolOrVar of def_bool
+| Les of int_cmd * int_cmd
+| Grt of int_cmd * int_cmd
+| LesEq of int_cmd * int_cmd
+| GrtEq of int_cmd * int_cmd
+| IntEq of int_cmd * int_cmd
+| StrEq of str_cmd * str_cmd
+| BlEq of bool_cmd * bool_cmd
+| Or of bool_cmd * bool_cmd
+| And of bool_cmd * bool_cmd
 ;;
 
 type setAction =
 | Set of string
-| SetAdd of string * str_var
-| SetRem of string * str_var
-;;
-
-type boolAction =
-| BoolOrVar of bool_var
-| Les of intAction * intAction
-| Grt of intAction * intAction
-| LesEq of intAction * intAction
-| GrtEq of intAction * intAction
-| IntEq of intAction * intAction
-| IntNtEq of intAction * intAction
-| StrEq of strAction * strAction
-| StrNtEq of strAction * strAction
-| BlEq of boolAction * boolAction
-| BlNtEq of boolAction * boolAction
-| And of boolAction * boolAction
-| Or of boolAction * boolAction
-| Not of boolAction
+| SetAdd of string * def_string
+| SetRem of string * def_string
 ;;
 
 type decAction =
 | LVarDec of string
-| IVarDec of string * intAction
-| SVarDec of string * strAction
-| BVarDec of string * boolAction
+| IVarDec of string * int_cmd
+| SVarDec of string * str_cmd
+| BVarDec of string * bool_cmd
 ;;
 
 type operation =
 | SetAction of setAction
-| IntAction of intAction
-| StrAction of strAction
-| BoolAction of boolAction
+| IntCmd of int_cmd
+| StrCmd of str_cmd
+| BoolCmd of bool_cmd
 ;;
 
 type print =
@@ -71,9 +67,9 @@ type print =
 
 type mutAction =
 | SetMut of string * setAction
-| IntMut of string * intAction
-| StrMut of string * strAction
-| BlMut of string * boolAction
+| IntMut of string * int_cmd
+| StrMut of string * str_cmd
+| BlMut of string * bool_cmd
 ;;
 
 type action = 
@@ -93,11 +89,11 @@ statement =
 | ActionStatement of action
 and 
 ifElse =
-| If of boolAction * body
-| IfElse of boolAction * body * body
+| If of bool_cmd * body
+| IfElse of bool_cmd * body * body
 and 
 forDo =
-| ForBool of boolAction * body
+| ForBool of bool_cmd * body
 | ForEach of string * string * body
 ;;
 

@@ -49,11 +49,11 @@ rule lexer_main = parse
     | "print"                                   { PRINT }
     | "var"                                     { VAR }
     | "^"                                       { STRING ""} (*empty string*)
-    | "int_"possibleSymbols+ as int_var_id         { IVAR( int_var_id ) }
-    | "str_"possibleSymbols+ as str_var_id         { SVAR( str_var_id ) }
-    | "bool_"possibleSymbols+ as bl_var_id          { BVAR( bl_var_id ) }
-    | "set_"possibleSymbols+  as set               { LVAR set }
-    | "<< input"['0'-'9']+ as input               { INPUT input  }
+    | '#'possibleSymbols+ as int_var_id         { IVAR( int_var_id ) }
+    | '@'possibleSymbols+ as str_var_id         { SVAR( str_var_id ) }
+    | '?'possibleSymbols+ as bl_var_id          { BVAR( bl_var_id ) }
+    | '$'possibleSymbols+  as set               { LVAR set }
+    | "$input"['0'-'9']+ as input               { INPUT input  }
     | "_output_count" as output_stuff           { COUNT output_stuff }
     | "place"                                   { PLACE }
     | "del"                                     { DELETE }

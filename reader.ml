@@ -32,21 +32,21 @@ let get_uniq_words input =
 
 let lookupStrVar e = match e with
   | Str s -> s
-  | Str_Idf sv -> try
+  | StrVar sv -> try
         VariableBinding.find sv !stringBinding
       with Not_found -> failwith ("Variable "^sv^" Not Declared as a string type. Hint: Maybe try - let "^sv^" = _empty_string;")
 ;;
 
 let lookupIntVar e = match e with
   | Int i -> i 
-  | Int_Idf iv -> try
+  | IntVar iv -> try
         VariableBinding.find iv !intBinding
       with Not_found -> failwith ("Variable "^iv^" Not Declared as an int type. Hint: Maybe try - let "^iv^" = 0;")
 ;;
 
 let looupBlVar e = match e with
   | Bool b -> b
-  | Bool_Idf bv -> try
+  | BoolVar bv -> try
         VariableBinding.find bv !boolBinding
       with Not_found -> failwith ("Variable "^bv^" Not Declared as a boolean type. Hint: Maybe try - let "^bv^" = false;")
 ;;
@@ -107,11 +107,12 @@ let rec processIntAction e = match e with
                           (processIntAction v1) / (processIntAction v2)
                         with Division_by_zero -> failwith "Cannot divide by zero.")
   | Mod (v1, v2) -> (processIntAction v1) mod (processIntAction v2)
+  | Uminus v1 -> -(processIntAction v1)
 ;;
 
-let rec processStrCmd e = match e with
+let rec processStrAction e = match e with
   | StrOrVar sv -> lookupStrVar sv
-  | Cat (s1, s2) -> (processStrCmd s1) ^ (lookupStrVar s2)
+  | Cat (s1, s2) -> (processStrAction s1) ^ (lookupStrVar s2)
 ;;
 
 let rec processBoolAction e = match e with
@@ -121,16 +122,20 @@ let rec processBoolAction e = match e with
   | LesEq (ia1, ia2) -> (processIntAction ia1) <= (processIntAction ia2)
   | GrtEq (ia1, ia2) -> (processIntAction ia1) >= (processIntAction ia2)
   | IntEq (ia1, ia2) -> (processIntAction ia1) == (processIntAction ia2)
-  | StrEq (sa1, sa2) -> let value = String.compare (processStrCmd sa1) (processStrCmd sa2) in value == 0
+  | IntNtEq (ia1, ia2) -> (processIntAction ia1) != (processIntAction ia2)
+  | StrEq (sa1, sa2) -> let value = String.compare (processStrAction sa1) (processStrAction sa2) in value == 0
+  | StrNtEq (sa1, sa2) -> let value = String.compare (processStrAction sa1) (processStrAction sa2) in value != 0
   | BlEq (ba1, ba2) -> (processBoolAction ba1) == (processBoolAction ba2)
-  | Or (ba1, ba2) -> (processBoolAction ba1) || (processBoolAction ba2)
+  | BlNtEq (ba1, ba2) -> (processBoolAction ba1) == (processBoolAction ba2)
   | And (ba1, ba2) -> (processBoolAction ba1) && (processBoolAction ba2)
+  | Or (ba1, ba2) -> (processBoolAction ba1) || (processBoolAction ba2)
+  | Not ba -> not (processBoolAction ba)
 ;;
 
 let rec processDecAction e = match e with
   | LVarDec s -> setBinding := VariableBinding.add s [] !setBinding
   | IVarDec (s, ia) -> intBinding := VariableBinding.add s (processIntAction ia) !intBinding
-  | SVarDec (s, sa) -> stringBinding := VariableBinding.add s (processStrCmd sa) !stringBinding
+  | SVarDec (s, sa) -> stringBinding := VariableBinding.add s (processStrAction sa) !stringBinding
   | BVarDec (s, ba) -> boolBinding := VariableBinding.add s (processBoolAction ba) !boolBinding
 ;;
 
@@ -165,11 +170,11 @@ let rec processPrint e = match e with
                               let set = (processSetAction s) in 
                                 print_newline (print_string (formatSet (empty_to_colon (sort_string_list set))))
                             with Not_found -> failwith ("Set Not Found. Hint: Maybe didn't declare it?"))
-  | Print (IntCmd i) -> print_newline (print_int (processIntAction i))
-  | Print (BoolCmd b) -> (let result = (processBoolAction b) in
+  | Print (IntAction i) -> print_newline (print_int (processIntAction i))
+  | Print (BoolAction b) -> (let result = (processBoolAction b) in
                                   if (result == true) then print_newline (print_string "true") 
                                   else print_newline (print_string "false"))
-  | Print (StrCmd s) -> print_newline (print_string (processStrCmd s))
+  | Print (StrAction s) -> print_newline (print_string (processStrAction s))
   (*| PrtPrim (CtLeaf c) -> processPrint (PrtPrim (IntLeaf !outputCount))*)
 ;;
 
@@ -178,7 +183,7 @@ let processMutAction e = match e with
                               setBinding := VariableBinding.add setName new_set !setBinding)
   | IntMut (intName, ia) -> (let new_int = processIntAction ia in
                               intBinding := VariableBinding.add intName new_int !intBinding)
-  | StrMut (strName, sa) -> (let new_str = processStrCmd sa in
+  | StrMut (strName, sa) -> (let new_str = processStrAction sa in
                               stringBinding := VariableBinding.add strName new_str !stringBinding)
   | BlMut (blName, ba) -> (let new_bl = processBoolAction ba in
                               boolBinding := VariableBinding.add blName new_bl !boolBinding)                             
@@ -186,9 +191,9 @@ let processMutAction e = match e with
 
 let processOperation e = match e with
   | SetAction sa -> processSetAction sa; ()
-  | IntCmd ia -> processIntAction ia; ()
-  | StrCmd sa -> processStrCmd sa; ()
-  | BoolCmd ba -> processBoolAction ba; ()
+  | IntAction ia -> processIntAction ia; ()
+  | StrAction sa -> processStrAction sa; ()
+  | BoolAction ba -> processBoolAction ba; ()
 ;;
 
 let processAction e = match e with
@@ -254,7 +259,7 @@ let run =
   storeInput;
   try
     let lexbuf = Lexing.from_channel (open_in Sys.argv.(1)) in
-    let result = (Parser.main Lexer.lexer_main lexbuf) in
+    let result = (Parser.parser_main Lexer.lexer_main lexbuf) in
       processMain result
   with Lexer.EOF ->
     exit 0
