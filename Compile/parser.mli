@@ -6,21 +6,21 @@ type token =
   | BVAR of (string)
   | LVAR of (string)
   | INPUT of (string)
-  | COUNT of (string)
+  | NUMBER of (string)
   | TRUE of (bool)
   | FALSE of (bool)
   | START
   | FINISH
+  | FOR
+  | IN
+  | DO
+  | STOP
   | PLACE
   | DELETE
   | IF
   | THEN
   | ELSE
   | END
-  | FOR
-  | COLON
-  | DO
-  | STOP
   | PRINT
   | VAR
   | EOL
@@ -31,7 +31,6 @@ type token =
   | MINUS
   | TIMES
   | DIVIDE
-  | MOD
   | CONS
   | LESS
   | GREATER
@@ -41,4 +40,4 @@ type token =
   | AND
 
 val main :
-  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Functions.mainTree
+  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Functions.main

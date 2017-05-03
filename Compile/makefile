@@ -23,12 +23,3 @@ parser.mli: functions.cmo
 
 functions.cmo: functions.ml
 	ocamlc -c functions.ml
-clean:
-	rm -f lexer.ml
-	rm -f parser.mli
-	rm -f parser.ml
-	rm -f lexer.cmo
-	rm -f parser.cmo
-	rm -f reader.cmo
-	rm -f *.cmi
-	rm -f functions.cmo

@@ -1,11 +1,11 @@
 start
-	var $set;
+	var &set;
 	var @str;
 
-	for @inp : $in0 do
+	for @inp in $in0 do
 		@str = "a"&@inp;
-		$set = $set place @str;
+		&set = &set place @str;
 	loop
 
-	print $set;
+	print &set;
 fi

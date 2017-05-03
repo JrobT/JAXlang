@@ -1,256 +1,220 @@
-open Functions;;
+
 open List;;
 open Lexer;;
+open Functions;;
 
-module VariableBinding = Map.Make(String);;
-
-let stringBinding = ref VariableBinding.empty;;
-let intBinding = ref VariableBinding.empty;;
-let boolBinding = ref VariableBinding.empty;;
-let setBinding = ref VariableBinding.empty;;
-
-let outputCount = ref 0;;
-
-let get_words input = 
-  let remove_stuff = Str.global_replace (Str.regexp "[ '{' | '}' | ' ']") "" in
-    Str.split_delim (Str.regexp ",") (remove_stuff input);;
-
-let uniq lst =
-  let unique_set = Hashtbl.create (List.length lst) in
-  List.iter (fun x -> Hashtbl.replace unique_set x ()) lst;
-  Hashtbl.fold (fun x () xs -> x :: xs) unique_set []
-;;
-
-let sort_string_list l =
-  List.sort compare (uniq l)
-;;
-
-let get_uniq_words input =
-  sort_string_list (get_words input)
-;;
-
-let lookupStrVar e = match e with
-  | Str s -> s
-  | Str_Idf sv -> try
-        VariableBinding.find sv !stringBinding
-      with Not_found -> failwith (sv^" Not Declared as a string.")
-;;
-
-let lookupIntVar e = match e with
-  | Int i -> i 
-  | Int_Idf iv -> try
-        VariableBinding.find iv !intBinding
-      with Not_found -> failwith (iv^" Not Declared as an int type.")
-;;
-
-let looupBlVar e = match e with
-  | Bool b -> b
-  | Bool_Idf bv -> try
-        VariableBinding.find bv !boolBinding
-      with Not_found -> failwith (bv^" Not Declared as a boolean type.")
-;;
-
-let lookupSet name =
-  VariableBinding.find name !setBinding
-;;
-
-let rec convert_empty_input = function
-| [] -> []
-| (h::t) when h = ":" -> ""::(convert_empty_input t) 
-| (h::t) ->  h::(convert_empty_input t)
-;;
-
-let processInput input_line stream_number= 
-  setBinding := VariableBinding.add ("$in"^(string_of_int !stream_number)) (convert_empty_input (get_uniq_words input_line)) !setBinding
-;;
-
-let processSetAction e  = match e with
-  | Set s -> lookupSet s
-  | SetAdd (name, sv) -> (let string_value = lookupStrVar sv in
-                          try
-                              let set = lookupSet name in string_value :: set;
-                          with Not_found -> failwith (name^" Not Found."))
-  | SetRem (name, sv) -> (let string_value = lookupStrVar sv in
-                          try
-                              let set = lookupSet name in
-                                List.filter (fun x-> if (compare string_value x)==0 then false else true) set
-                          with Not_found -> failwith (name^" Not Found."))
-;;
-
-let exists name =
-  try
-    VariableBinding.find name !intBinding;
-    None
-  with Not_found -> try 
-    VariableBinding.find name !stringBinding; 
-    None
-  with Not_found -> 
-    VariableBinding.find name !boolBinding;
-    None
-;;
-
-let processVar name = 
-  try
-    exists name          
-  with Not_found ->  failwith ("Variable "^name^ " is not declared.")
-;;
-
-let rec processIntAction e = match e with
-  | IntOrVar iv -> lookupIntVar iv
-  | Plus (v1, v2) -> (processIntAction v1) + (processIntAction v2)
-  | Minus (v1, v2) -> (processIntAction v1) - (processIntAction v2)
-  | Times (v1, v2) -> (processIntAction v1) * (processIntAction v2)
-  | Divide (v1, v2) ->( try
-                          (processIntAction v1) / (processIntAction v2)
-                        with Division_by_zero -> failwith "Cannot divide by zero.")
-  | Mod (v1, v2) -> (processIntAction v1) mod (processIntAction v2)
-;;
-
-let rec processStrCmd e = match e with
-  | StrOrVar sv -> lookupStrVar sv
-  | Cat (s1, s2) -> (processStrCmd s1) ^ (lookupStrVar s2)
-;;
-
-let rec processBoolAction e = match e with
-  | BoolOrVar bv -> looupBlVar bv
-  | Les (ia1, ia2) -> (processIntAction ia1) < (processIntAction ia2)
-  | Grt (ia1, ia2) -> (processIntAction ia1) > (processIntAction ia2)
-  | LesEq (ia1, ia2) -> (processIntAction ia1) <= (processIntAction ia2)
-  | GrtEq (ia1, ia2) -> (processIntAction ia1) >= (processIntAction ia2)
-  | IntEq (ia1, ia2) -> (processIntAction ia1) == (processIntAction ia2)
-  | StrEq (sa1, sa2) -> let value = String.compare (processStrCmd sa1) (processStrCmd sa2) in value == 0
-  | BlEq (ba1, ba2) -> (processBoolAction ba1) == (processBoolAction ba2)
-  | Or (ba1, ba2) -> (processBoolAction ba1) || (processBoolAction ba2)
-  | And (ba1, ba2) -> (processBoolAction ba1) && (processBoolAction ba2)
-;;
-
-let rec processDecAction e = match e with
-  | LVarDec s -> setBinding := VariableBinding.add s [] !setBinding
-  | IVarDec (s, ia) -> intBinding := VariableBinding.add s (processIntAction ia) !intBinding
-  | SVarDec (s, sa) -> stringBinding := VariableBinding.add s (processStrCmd sa) !stringBinding
-  | BVarDec (s, ba) -> boolBinding := VariableBinding.add s (processBoolAction ba) !boolBinding
-;;
-
-let rec empty_to_colon = function
-  | [] -> []
-  | (h::t) when h = "" -> ":"::(empty_to_colon t) 
-  | (h::t) ->  h::(empty_to_colon t)
-;;
+let inputNumber = ref 0;;
 
 let car x = match x with 
-  | (s, t) -> s;;
-
+  | (h, t) -> h;;
 let split list n =
   let rec aux i acc = function
       | [] -> List.rev acc, []
       | h :: t as l -> if i = 0 then List.rev acc, l
                        else aux (i-1) (h :: acc) t  
                        in aux n [] list;;
-
-let formatSet o =
-  let truncate = (car (split o !outputCount)) in
-  let rec formatSetAux o = match o with 
+let makeOutSet o =
+  let trun = (car (split o !inputNumber)) in
+  let rec makeOutSetAux o = match o with 
   | [] -> ""
   | [x] -> x
-  | head::body -> head^", "^(formatSetAux body)
-                  in "{"^(formatSetAux truncate)^"}"
+  | head::body -> head^", "^(makeOutSetAux body)
+                  in "{"^(makeOutSetAux trun)^"}"
 ;;
 
-let rec processPrint e = match e with
-  | Print (SetAction s) -> (try 
-                              let set = (processSetAction s) in 
-                                print_newline (print_string (formatSet (empty_to_colon (sort_string_list set))))
-                            with Not_found -> failwith ("Set Not Found."))
-  | Print (IntCmd i) -> print_newline (print_int (processIntAction i))
-  | Print (BoolCmd b) -> (let result = (processBoolAction b) in
-                                  if (result == true) then print_newline (print_string "true") 
-                                  else print_newline (print_string "false"))
-  | Print (StrCmd s) -> print_newline (print_string (processStrCmd s))
-  (*| PrtPrim (CtLeaf c) -> processPrint (PrtPrim (IntLeaf !outputCount))*)
+let rec emptyStringSymbols = function
+  | [] -> []
+  | (h::t) when h = "" -> ":"::(emptyStringSymbols t) 
+  | (h::t) ->  h::(emptyStringSymbols t)
 ;;
 
-let processMutAction e = match e with
-  | SetMut (setName, sa) -> (let new_set = processSetAction sa in 
-                              setBinding := VariableBinding.add setName new_set !setBinding)
-  | IntMut (intName, ia) -> (let new_int = processIntAction ia in
-                              intBinding := VariableBinding.add intName new_int !intBinding)
-  | StrMut (strName, sa) -> (let new_str = processStrCmd sa in
-                              stringBinding := VariableBinding.add strName new_str !stringBinding)
-  | BlMut (blName, ba) -> (let new_bl = processBoolAction ba in
-                              boolBinding := VariableBinding.add blName new_bl !boolBinding)                             
+module VariableBinding = Map.Make(String);;
+let bindMyString = ref VariableBinding.empty;;
+let bindMyInt = ref VariableBinding.empty;;
+let bindMyBool = ref VariableBinding.empty;;
+let bindMySet = ref VariableBinding.empty;;
+
+let strings_in_input input = 
+  let remove_stuff = Str.global_replace (Str.regexp "['{'|'}'|' ']") "" in
+    Str.split_delim (Str.regexp ",") (remove_stuff input);;
+let uniq lst = (* found something on hashtable ocaml, what do you think? *)
+  let unique = Hashtbl.create (List.length lst) in
+  List.iter (fun i -> Hashtbl.replace unique i ()) lst;
+  Hashtbl.fold (fun i () j -> i :: j) unique []
+;;
+let sort l =
+  List.sort compare (uniq l)
+;;
+let uniq_strings input =
+  sort (strings_in_input input)
 ;;
 
-let processOperation e = match e with
-  | SetAction sa -> processSetAction sa; ()
-  | IntCmd ia -> processIntAction ia; ()
-  | StrCmd sa -> processStrCmd sa; ()
-  | BoolCmd ba -> processBoolAction ba; ()
+(* made them methods, cleaner than how it was before *)
+let lookupSet name =
+  VariableBinding.find name !bindMySet
+;;
+let lookupStrVar e = match e with
+  | Str s -> s
+  | Str_Idf sv ->
+        VariableBinding.find sv !bindMyString
+;;
+let lookupIntVar e = match e with
+  | Int i -> i 
+  | Int_Idf iv ->
+        VariableBinding.find iv !bindMyInt
+;;
+let lookupBlVar e = match e with
+  | Bool b -> b
+  | Bool_Idf bv ->
+        VariableBinding.find bv !bindMyBool
 ;;
 
-let processAction e = match e with
-  | Operation op -> processOperation op
-  | DecAction s -> processDecAction s
-  | MutAction s -> processMutAction s
-  | PrintAction s -> processPrint s
+let dealWithInput input_line stream_number= 
+  bindMySet := VariableBinding.add ("$in"^(string_of_int !stream_number)) (emptyStringSymbols (uniq_strings input_line)) !bindMySet
+;;
+let dealWithSets e  = match e with
+  | Set s -> lookupSet s
+  | SetPlace (name, sv) -> 
+          (let string_val = lookupStrVar sv in
+                try
+                    let set = lookupSet name in string_val :: set;
+                with Not_found -> failwith (name))
+  | SetDel (name, sv) -> 
+          (let string_val = lookupStrVar sv in
+            let set = lookupSet name in
+                List.filter (fun x -> 
+                    if (compare string_val x)==0 then false else true) set)
 ;;
 
-let rec processMain e = match e with
-  | Body any -> processBody any
-
-and processBody e = match e with
-  | SingleStatement s -> processSingleStatement s
-  | MultiStatement (s, b) -> processSingleStatement s; processBody b
-
-and processSingleStatement e = match e with
-  | IfStatement s -> processIf s
-  | ForStatement s -> processFor s
-  | ActionStatement s -> processAction s
-
-and processIf e = match e with
-  | If (b, bod) -> if (processBoolAction b) then (processBody bod)
-  | IfElse (b, bod1, bod2) -> if (processBoolAction b) then (processBody bod1) else (processBody bod2)
-
-and processFor e = match e with
-  | ForEach (v, setName, bod) -> (try
-                                exists v;
-                                failwith (v^" used already!")
-                              with Not_found -> (try
-                                                   (let set = lookupSet setName in
-                                                    let count = List.length set in
-                                                      processDecAction (SVarDec (v, StrOrVar (Str "")));
-                                                      for i = 0 to (count - 1) do 
-                                                        processMutAction (StrMut (v, StrOrVar (Str (List.nth set i))));
-                                                        processBody bod;
-                                                      done;
-                                                      stringBinding := VariableBinding.remove v !stringBinding)
-                                                 with Not_found -> failwith (setName^" Not Found.")))
-  | ForBool (bl, bod) -> while (processBoolAction bl) do (processBody bod) done
-;;
-
-let storeInput = 
+let setVariable name = 
   try
-    let streamCount = ref 0 in
+    try
+        VariableBinding.find name !bindMyInt;
+        None
+    with Not_found -> try 
+        VariableBinding.find name !bindMyString; 
+        None
+    with Not_found -> 
+        VariableBinding.find name !bindMyBool;
+        None        
+  with Not_found ->  failwith (name)
+;;
+
+let rec str_cmd e = match e with
+  | StrOrVar sv -> lookupStrVar sv
+  | Cat (s1, s2) -> (str_cmd s1) ^ (lookupStrVar s2)
+;;
+let rec mathsStuff e = match e with
+  | IntOrVar iv -> lookupIntVar iv
+  | Plus (v1, v2) -> (mathsStuff v1) + (mathsStuff v2)
+  | Minus (v1, v2) -> (mathsStuff v1) - (mathsStuff v2)
+  | Times (v1, v2) -> (mathsStuff v1) * (mathsStuff v2)
+  | Divide (v1, v2) -> (mathsStuff v1) / (mathsStuff v2)
+;;
+let rec booleanFun e = match e with
+  | BoolOrVar bv -> lookupBlVar bv
+  | Less (ia1, ia2) -> (mathsStuff ia1) < (mathsStuff ia2)
+  | Greater (ia1, ia2) -> (mathsStuff ia1) > (mathsStuff ia2)
+  | IntEql (ia1, ia2) -> (mathsStuff ia1) == (mathsStuff ia2)
+  | StrEql (sa1, sa2) -> let value = String.compare (str_cmd sa1) (str_cmd sa2) in value == 0
+  | BlEql (ba1, ba2) -> (booleanFun ba1) == (booleanFun ba2)
+  | Or (ba1, ba2) -> (booleanFun ba1) || (booleanFun ba2)
+  | And (ba1, ba2) -> (booleanFun ba1) && (booleanFun ba2)
+;;
+let rec declaration e = match e with
+  | LVarDec s -> bindMySet := VariableBinding.add s [] !bindMySet
+  | IVarDec (s, ia) -> bindMyInt := VariableBinding.add s (mathsStuff ia) !bindMyInt
+  | SVarDec (s, sa) -> bindMyString := VariableBinding.add s (str_cmd sa) !bindMyString
+  | BVarDec (s, ba) -> bindMyBool := VariableBinding.add s (booleanFun ba) !bindMyBool
+;;
+
+let rec printOut e = match e with
+    | Print (StrCmd s) -> print_newline (print_string (str_cmd s))
+    | Print (SetCmd s) ->
+        let set = (dealWithSets s) in print_newline (print_string (makeOutSet (emptyStringSymbols (sort set))))
+    | Print (IntCmd i) -> print_newline (print_int (mathsStuff i))
+    | Print (BoolCmd b) -> 
+        (let result = (booleanFun b) in
+            if (result == true) then print_newline (print_string "true") 
+            else print_newline (print_string "false"))
+;;
+
+let runExpr e = match e with
+  | SetCmd sa -> dealWithSets sa; ()
+  | IntCmd ia -> mathsStuff ia; ()
+  | StrCmd sa -> str_cmd sa; ()
+  | BoolCmd ba -> booleanFun ba; ()
+;;
+
+let mutation e = match e with
+  | SetMut (name, sa) -> 
+          (let new_set = dealWithSets sa in 
+            bindMySet := VariableBinding.add name new_set !bindMySet)
+  | IntMut (name, ia) -> 
+          (let new_int = mathsStuff ia in
+            bindMyInt := VariableBinding.add name new_int !bindMyInt)
+  | StrMut (name, sa) -> 
+          (let new_str = str_cmd sa in
+            bindMyString := VariableBinding.add name new_str !bindMyString)
+  | BlMut (blName, ba) -> 
+          (let new_bl = booleanFun ba in
+            bindMyBool := VariableBinding.add blName new_bl !bindMyBool)              
+;;
+
+let doSomethingCool e = match e with
+  | Expr op -> runExpr op
+  | DecCmd s -> declaration s
+  | MutCmd s -> mutation s
+  | PrintCmd s -> printOut s
+;;
+
+let rec dealWithProgram e = match e with
+  | Body code -> dealWithCode code
+and dealWithCode e = match e with
+  | SingleStatement s -> preparedStatements s
+  | Multiline (s, b) -> preparedStatements s; dealWithCode b
+and forLoop e = match e with
+    | ForBool (bl, bod) -> while (booleanFun bl) do (dealWithCode bod) done
+    | ForEach (v, setName, bod) -> try
+      (let set = lookupSet setName in
+        let count = List.length set in
+            declaration (SVarDec (v, StrOrVar (Str "")));
+            for i = 0 to (count - 1) do 
+                mutation (StrMut (v, StrOrVar (Str (List.nth set i))));
+                dealWithCode bod;
+            done;
+        bindMyString := VariableBinding.remove v !bindMyString)
+        with Not_found -> failwith (setName)
+and preparedStatements e = match e with
+    | CmdStatement s -> doSomethingCool s
+    | IfStatement s -> dealWithIf s
+    | ForStatement s -> forLoop s
+  and dealWithIf e = match e with
+    | If (b, bod) -> if (booleanFun b) then (dealWithCode bod)
+    | IfElse (b, bod1, bod2) -> if (booleanFun b) then (dealWithCode bod1) else (dealWithCode bod2)
+;;
+
+let getInput = 
+  try
+    let info = ref 0 in
       while true do
         let line = input_line stdin in
           if (Str.string_match (Str.regexp "^[0-9]+$") line 0) then 
-            (
-            outputCount := (int_of_string line);
-            intBinding := VariableBinding.add "#OUTPUT_COUNT" !outputCount !intBinding)
+            (inputNumber := (int_of_string line); (* Alex: still not working *)
+             bindMyInt := VariableBinding.add "_output_count" !inputNumber !bindMyInt)
           else( 
-            processInput line streamCount;
-            streamCount := !streamCount + 1
+            dealWithInput line info;
+            info := !info + 1
           )
       done;
       None
   with
       End_of_file -> None
 ;;
-
-let run =
-  storeInput;
+let run = getInput;
   try
     let lexbuf = Lexing.from_channel (open_in Sys.argv.(1)) in
     let result = (Parser.main Lexer.lexer_main lexbuf) in
-      processMain result
+      dealWithProgram result
   with Lexer.EOF ->
     exit 0

@@ -20,7 +20,6 @@ type int_cmd =
 | Minus of int_cmd * int_cmd
 | Times of int_cmd * int_cmd
 | Divide of int_cmd * int_cmd
-| Mod of int_cmd * int_cmd
 ;;
 
 type def_bool = 
@@ -30,73 +29,71 @@ type def_bool =
 
 type bool_cmd =
 | BoolOrVar of def_bool
-| Les of int_cmd * int_cmd
-| Grt of int_cmd * int_cmd
-| LesEq of int_cmd * int_cmd
-| GrtEq of int_cmd * int_cmd
-| IntEq of int_cmd * int_cmd
-| StrEq of str_cmd * str_cmd
-| BlEq of bool_cmd * bool_cmd
+| Less of int_cmd * int_cmd
+| Greater of int_cmd * int_cmd
+| StrEql of str_cmd * str_cmd
+| IntEql of int_cmd * int_cmd
+| BlEql of bool_cmd * bool_cmd
 | Or of bool_cmd * bool_cmd
 | And of bool_cmd * bool_cmd
 ;;
 
-type setAction =
+type set_cmd =
 | Set of string
-| SetAdd of string * def_string
-| SetRem of string * def_string
+| SetPlace of string * def_string
+| SetDel of string * def_string
 ;;
 
-type decAction =
+type mut_cmd =
+| SetMut of string * set_cmd
+| StrMut of string * str_cmd
+| IntMut of string * int_cmd
+| BlMut of string * bool_cmd
+;;
+
+type dec_cmd =
 | LVarDec of string
 | IVarDec of string * int_cmd
 | SVarDec of string * str_cmd
 | BVarDec of string * bool_cmd
 ;;
 
-type operation =
-| SetAction of setAction
-| IntCmd of int_cmd
+type expr =
+| SetCmd of set_cmd
 | StrCmd of str_cmd
+| IntCmd of int_cmd
 | BoolCmd of bool_cmd
 ;;
 
 type print =
-| Print of operation
+| Print of expr
 ;;
 
-type mutAction =
-| SetMut of string * setAction
-| IntMut of string * int_cmd
-| StrMut of string * str_cmd
-| BlMut of string * bool_cmd
-;;
-
-type action = 
-| Operation of operation
-| DecAction of decAction
-| MutAction of mutAction
-| PrintAction of print
+type doSomething = 
+| Expr of expr
+| DecCmd of dec_cmd
+| MutCmd of mut_cmd
+| PrintCmd of print
 ;;
 
 type body =
 | SingleStatement of statement
-| MultiStatement of statement * body
+| Multiline of statement * body
 and 
 statement = 
+| CmdStatement of doSomething
 | IfStatement of ifElse
-| ForStatement of forDo
-| ActionStatement of action
-and 
+| ForStatement of forAll
+and
 ifElse =
 | If of bool_cmd * body
 | IfElse of bool_cmd * body * body
 and 
-forDo =
+forAll =
 | ForBool of bool_cmd * body
 | ForEach of string * string * body
 ;;
 
-type mainTree = 
+type main = 
 | Body of body
 ;;

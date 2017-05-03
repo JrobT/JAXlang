@@ -1,0 +1,21 @@
+start
+	var &set1;
+
+    for @item1 in $in0 do
+        for @item2 in $in1 do
+            if @item1 == @item2 then
+                &set1 = &set1 place @item1;
+            end
+        loop
+	loop
+
+	var @str;
+    var &set2;
+
+	for @inp in &set1 do
+		@str = "a"&@inp;
+		&set2 = &set2 place @str;
+	loop
+
+ 	print &set2;
+fi

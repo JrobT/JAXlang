@@ -1,13 +1,20 @@
-begin
-	let $set;
+start
+	var &set1;
+    var &set2;
 	
-	for @inp in $input0 do
-		$set = $set add @inp;
-	done
+	for @inp in $in0 do
+		&set1 = &set1 place @inp;
+        &set2 = &set2 place @inp;
+	loop
 
-	for @inp2 in $input1 do
-		$set = $set add @inp2;
-	done
+	for @inp in $in1 do
+		&set1 = &set1 place @inp;
+	loop
 
-	print $set;
-end
+    for @inp in $in2 do
+        &set2 = &set2 place @inp;
+    loop
+
+	print &set1;
+    print &set2;
+fi

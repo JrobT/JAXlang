@@ -1,0 +1,40 @@
+start
+	var &set1;
+    var &set2;
+    var &set3;
+    var ?isin;
+
+    for @item in $in0 do
+        &set1 = &set1 place @item;
+    loop
+
+    for @item1 in $in1 do
+        ?isin = false;
+        for @item2 in $in0 do
+            if @item1 == @item2 then
+                ?isin = true;
+            end
+        loop
+        if ?isin == false then
+            &set1 = &set1 place @item1;
+        end
+    loop
+
+    for @item1 in $in0 do
+        for @item2 in $in1 do
+            if @item1 == @item2 then
+                &set2 = &set2 place @item1;
+            end
+        loop
+	loop 
+
+    for @item1 in &set1 do
+        @str = @item1;
+        for @item2 in &set2 do
+            @str = @str&@item2;
+        loop
+        &set3 = &set3 place @str;
+    loop
+
+ 	print &set3; 
+fi

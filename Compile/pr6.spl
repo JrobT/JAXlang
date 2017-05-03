@@ -1,0 +1,21 @@
+start
+	var &set1;
+    var &set2;
+	var @str;
+
+	for @inp in $in0 do
+		@str = "a"&@inp;
+		&set1 = &set1 place @str;
+	loop
+
+    for @inp in $in1 do
+        @str = "b"&@inp;
+        &set2 = &set2 place @str;
+    loop
+
+	for @inp in &set2 do
+		&set1 = &set1 place @inp;
+	loop
+
+ 	print &set1;
+fi

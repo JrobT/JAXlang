@@ -1,17 +1,17 @@
-begin
-	let $set;
-	let @arg;
-	let #count = 0;
+start
+	var &set;
+	var @arg;
+	var #cnt = 0;
 
-	for @inp in $input0 do
+	for @inp in $in0 do
 		@arg = @inp;
-		for #count < #OUTPUT_COUNT do
-			$set = $set add @arg;
-			@arg = @arg^"a";
-			#count = #count + 1;
-		done
-		#count = 0;
-	done	
+		for #cnt < _output_count do
+			&set = &set place @arg;
+			@arg = @arg&"a";
+			#cnt = #cnt + 1;
+	    loop
+	    #cnt = 0;
+	loop	
 	
-	print $set;	
-end
+	print &set;
+fi

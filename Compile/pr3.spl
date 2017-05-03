@@ -1,20 +1,30 @@
-begin
-	let $set_a; /* declare first output set */
-	let $set_b; /* declare second output set */
+start
+	var &set1;
+    var &set2;
+    var &set3;
+    var &output1;
+    var &output2;
 
-	for @inp1 in $input0 do
-		$set_a = $set_a add @inp1;
-		$set_b = $set_b add @inp1;
-	done
+	for @inp in $in0 do
+		&set1 = &set1 place @inp;
+    loop
 
-	for @inp2 in $input1 do
-		$set_a = $set_a add @inp2;
-	done
+	for @item1 in &set1 do
+        for @item2 in $in1 do
+            if @item1 == @item2 then
+                &output1 = &output1 place @item1;
+            end
+        loop
+	loop
 
-	for @inp3 in $input2 do
-		$set_b = $set_b add @inp3;
-	done
+    for @item1 in &set1 do
+        for @item2 in $in2 do
+            if @item1 == @item2 then
+                &output2 = &output2 place @item1;
+            end
+        loop
+	loop
 
-	print $set_a;
-	print $set_b;
-end
+	print &output1;
+    print &output2;
+fi
